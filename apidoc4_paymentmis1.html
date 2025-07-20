@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Aggregator API Docs</title>
+    <style>
+        /* General styles for the entire page */
+        * {
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+
+        body {
+            margin: 0; /* Remove default body margin */
+            font-family: 'Inter', sans-serif; /* Use Inter font as per guidelines, fall back to generic sans-serif */
+            height: 100vh; /* Full viewport height */
+            display: flex; /* Use flexbox for main layout */
+            overflow: hidden; /* Hide overflow to prevent horizontal scrollbar */
+            background: #f1f5f9; /* Light grey background */
+            color: #333; /* Dark grey text color */
+        }
+
+        /* Sidebar styles */
+        aside {
+            width: 260px; /* Fixed width for the sidebar */
+            background-color: #1f2937; /* Dark background for sidebar */
+            color: white; /* White text color */
+            padding: 20px; /* Padding inside the sidebar */
+            overflow-y: auto; /* Enable vertical scrolling if content overflows */
+            transition: width 0.3s ease; /* Smooth transition for width changes */
+            flex-shrink: 0; /* Prevent sidebar from shrinking */
+        }
+
+        aside.minimized {
+            width: 60px; /* Minimized width for the sidebar */
+            padding: 10px; /* Reduced padding when minimized */
+        }
+
+        aside h1,
+        aside input,
+        aside ul,
+        .folder-title {
+            transition: opacity 0.3s ease; /* Smooth transition for opacity changes */
+        }
+
+        aside.minimized h1,
+        aside.minimized input,
+        aside.minimized ul,
+        aside.minimized .folder-title {
+            opacity: 0; /* Hide elements when minimized */
+            pointer-events: none; /* Disable interaction with hidden elements */
+        }
+
+        #toggleSidebar {
+            background: #0d6efd; /* Blue background */
+            color: white; /* White text */
+            border: none; /* No border */
+            padding: 6px 12px; /* Padding for the button */
+            border-radius: 4px; /* Rounded corners */
+            cursor: pointer; /* Pointer cursor on hover */
+            margin-bottom: 10px; /* Margin below the button */
+            width: 100%; /* Full width */
+        }
+
+        #searchInput {
+            width: 100%; /* Full width */
+            padding: 8px; /* Padding */
+            margin: 10px 0; /* Vertical margin */
+            font-size: 14px; /* Font size */
+            border: none; /* No border */
+            border-radius: 4px; /* Rounded corners */
+            background: #374151; /* Darker background for search input */
+            color: white; /* White text color */
+        }
+        #searchInput::placeholder {
+            color: #b0b0b0; /* Light grey placeholder text */
+        }
+
+        .folder-title {
+            font-weight: bold; /* Bold font */
+            margin-top: 10px; /* Top margin */
+            padding: 5px 0; /* Vertical padding */
+            cursor: pointer; /* Pointer cursor on hover */
+            display: flex; /* Use flexbox for title and icon */
+            align-items: center; /* Align items vertically */
+            justify-content: space-between; /* Space between title and icon */
+        }
+        .folder-title .icon {
+            margin-left: 5px; /* Margin for the icon */
+            transition: transform 0.2s ease; /* Smooth transition for icon rotation */
+        }
+        .folder-title.collapsed .icon {
+            transform: rotate(-90deg); /* Rotate icon when folder is collapsed */
+        }
+
+        .folder ul {
+            list-style: none; /* Remove list bullets */
+            padding-left: 15px; /* Indent list items */
+            margin: 0; /* Remove default margin */
+            overflow: hidden; /* Hide overflow content */
+            transition: max-height 0.3s ease-out; /* Smooth transition for max-height change */
+            max-height: 500px; /* Arbitrary large value to allow smooth collapse */
+        }
+        .folder ul.collapsed {
+            max-height: 0; /* Collapse by setting max-height to 0 */
+        }
+
+        .folder ul li {
+            cursor: pointer; /* Pointer cursor on hover */
+            padding: 5px 0; /* Vertical padding */
+            font-size: 15px; /* Font size */
+            color: #d1d5db; /* Light grey text color */
+            border-radius: 4px; /* Rounded corners */
+        }
+
+        .folder ul li:hover {
+            color: #ffffff; /* White text on hover */
+            background-color: rgba(255,255,255,0.1); /* Subtle background change on hover */
+        }
+        .folder ul li.active-link {
+            color: #0d6efd; /* Blue text for active link */
+            font-weight: bold; /* Bold font for active link */
+            background-color: rgba(255,255,255,0.15); /* Slightly darker background for active link */
+        }
+
+        /* Main content area styles */
+        main {
+            flex-grow: 1; /* Allow main content to grow and fill space */
+            display: flex; /* Use flexbox for header and main-content */
+            flex-direction: column; /* Stack header and main-content vertically */
+            overflow: hidden; /* Hide overflow */
+        }
+
+        header {
+            background: white; /* White background */
+            padding: 10px 20px; /* Padding */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+            display: flex; /* Use flexbox for header content */
+            align-items: center; /* Align items vertically */
+            justify-content: space-between; /* Space out items */
+            flex-shrink: 0; /* Prevent header from shrinking */
+        }
+
+        .main-content {
+            display: flex; /* Use flexbox for intro-content and right-toggle-panel */
+            flex-grow: 1; /* Allow main-content to grow */
+            overflow: hidden; /* Hide overflow */
+        }
+
+        .intro-content {
+            flex: 1; /* Allow intro-content to grow and fill space */
+            padding: 20px; /* Padding */
+            overflow-y: auto; /* Enable vertical scrolling */
+            background: #fff; /* White background */
+            line-height: 1.6; /* Line height for readability */
+            display: flex; /* IMPORTANT: Changed to flex to allow TOC and content-body side-by-side */
+        }
+
+        /* Right panel styles (for API details) */
+        .right-toggle-panel {
+            width: 460px; /* Fixed width for the right panel - CHANGED from 360px to 460px */
+            border-left: 1px solid #e0e0e0; /* Light grey left border */
+            background: #f8f9fa; /* Off-white background */
+            padding: 15px; /* Padding */
+            overflow-y: auto; /* Enable vertical scrolling */
+            transition: transform 0.3s ease, width 0.3s ease, padding 0.3s ease; /* Smooth transition for multiple properties */
+            flex-shrink: 0; /* Prevent panel from shrinking */
+        }
+
+        .right-toggle-panel.minimized {
+            transform: translateX(100%); /* Slide out to the right when minimized */
+            width: 0; /* Collapse width to 0 */
+            padding: 0; /* Remove padding */
+            border-left: none; /* Remove border */
+        }
+        
+        /* Styling for the API header within the right panel */
+        .api-header {
+            display: flex; /* Use flexbox for request type and URL */
+            align-items: center; /* Align items vertically */
+            background-color: #1e1e1e; /* Dark background */
+            padding: 10px; /* Padding */
+            border-radius: 6px; /* Rounded corners */
+            margin-bottom: 15px; /* Bottom margin */
+            font-family: "Inter", sans-serif; /* Specific font */
+            overflow-x: auto; /* Enable horizontal scrolling if URL is too long */
+            color: white; /* White text color */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Subtle shadow */
+        }
+
+        .request-type {
+            background-color: #833fdd; /* Purple background for request type */
+            color: white; /* White text */
+            padding: 4px 10px; /* Padding */
+            border-radius: 5px; /* Rounded corners */
+            font-weight: 700; /* Bold font */
+            font-size: 12px; /* Smaller font size */
+            text-align: center; /* Center text */
+            margin-right: 10px; /* Right margin */
+            min-width: 50px; /* Minimum width */
+            flex-shrink: 0; /* Prevent from shrinking */
+        }
+
+        .url-container {
+            display: flex; /* Use flexbox for URL and copy button */
+            align-items: center; /* Align items vertically */
+            background: #ddefff; /* Light blue background */
+            padding: 6px 10px; /* Padding */
+            border-radius: 4px; /* Rounded corners */
+            flex-grow: 1; /* Allow to grow */
+            justify-content: space-between; /* Space out items */
+            color: #333; /* Dark grey text color */
+            overflow: hidden; /* Hide overflow */
+        }
+
+        .url {
+            white-space: nowrap; /* Prevent wrapping */
+            overflow-x: auto; /* Enable horizontal scrolling */
+            font-size: 14px; /* Font size */
+            color: #333; /* Dark grey text color */
+            flex-grow: 1; /* Allow to grow */
+            margin-right: 10px; /* Right margin */
+        }
+
+        .copy-btn {
+            background: none; /* No background */
+            border: none; /* No border */
+            font-size: 14px; /* Font size */
+            cursor: pointer; /* Pointer cursor */
+            color: #000; /* Black text */
+            flex-shrink: 0; /* Prevent from shrinking */
+            padding: 4px; /* Padding for easier clicking */
+            border-radius: 4px; /* Rounded corners */
+        }
+        .copy-btn:hover {
+            background-color: rgba(0,0,0,0.1); /* Subtle hover effect */
+        }
+
+        /* Code block styling */
+        .code-block {
+            background: #1e1e1e; /* Dark background for code blocks */
+            color: #f8f8f2; /* Light text color */
+            padding: 10px; /* Padding */
+            border-radius: 6px; /* Rounded corners */
+            font-family: monospace; /* Monospace font */
+            margin-bottom: 10px; /* Bottom margin */
+            overflow-x: auto; /* Enable horizontal scrolling */
+            font-size: 14px; /* Font size */
+            position: relative; /* For "read more" button positioning */
+        }
+        .code-block pre {
+            margin: 0; /* Remove default pre margin */
+            white-space: pre-wrap; /* Allows long lines to wrap */
+            word-break: break-all; /* Breaks words if necessary to fit */
+            max-height: 150px; /* Default max height for scrollable code */
+            overflow: hidden; /* Hide overflow */
+            transition: max-height 0.3s ease-out; /* Smooth transition for height changes */
+            position: relative;
+        }
+
+        .code-block pre.expanded {
+            max-height: none; /* Show full content */
+        }
+        
+        /* Fade effect for "read more" */
+        .code-block pre:not(.expanded)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px; /* Height of the fade effect */
+            background: linear-gradient(to top, #1e1e1e, transparent);
+            pointer-events: none; /* Allows clicks on elements below */
+        }
+
+        .read-more-btn {
+            background: #0d6efd; /* Blue background */
+            color: white; /* White text */
+            border: none; /* No border */
+            padding: 5px 10px; /* Padding */
+            border-radius: 4px; /* Rounded corners */
+            cursor: pointer; /* Pointer cursor */
+            font-size: 13px; /* Font size */
+            margin-top: 5px; /* Top margin */
+            display: block; /* Make it a block element */
+            width: fit-content; /* Fit content width */
+            margin-left: auto; /* Align to right */
+            margin-right: auto; /* Align to right */
+        }
+        .read-more-btn:hover {
+            background-color: #0a58ca; /* Darker blue on hover */
+        }
+
+
+        /* Syntax highlighting colors (customizable) */
+        .code-block .key {
+            color: #98fabe; /* Bright green for JSON keys */
+        }
+        .code-block .string {
+            color: #fce39e; /* Light orange for JSON strings */
+        }
+        .code-block .number,
+        .code-block .boolean,
+        .code-block .null {
+            color: #fce39e; /* Light orange for numbers, booleans, null */
+        }
+        .code-block .operator {
+            color: #f8f8f2; /* White for operators */
+        }
+        .code-block .curl-param {
+            color: #c586c0; /* Purple for curl parameters like -X, -H, -d */
+        }
+        .code-block .curl-verb {
+            color: #ce9178; /* Light brown/orange for HTTP verbs like POST, GET */
+        }
+        .code-block .curl-url {
+            color: #dcdcaa; /* Light yellow for URLs in curl */
+        }
+        
+        .toggleBtn {
+            background: #4a5568; /* Dark grey for "old fashion" toggle */
+            color: white; /* White text */
+            border: 1px solid #6b7280; /* Light grey border */
+            padding: 6px 10px; /* Padding */
+            border-radius: 4px; /* Rounded corners */
+            cursor: pointer; /* Pointer cursor */
+            font-size: 13px; /* Smaller font */
+            margin-top: 5px; /* Top margin */
+            transition: background-color 0.2s ease, border-color 0.2s ease; /* Smooth transition */
+            margin-left: 10px; /* Space from heading */
+        }
+        .toggleBtn:hover {
+            background-color: #2d3748; /* Darker grey on hover */
+            border-color: #4a5568; /* Darker border on hover */
+        }
+
+        /* Table of Contents (TOC) styling - repositioned */
+        .toc-container {
+            width: 200px; /* Fixed width for TOC */
+            margin-right: 20px; /* Space between TOC and content */
+            flex-shrink: 0; /* Prevent TOC from shrinking */
+            /* This will be handled by JS to show/hide */
+            display: none; /* Hide by default, shown by JS for relevant sections */
+        }
+        .toc {
+            position: sticky; /* Make TOC sticky */
+            top: 20px; /* Stick to the top with some offset */
+            background: #f8f9fa; /* Off-white background */
+            padding: 10px; /* Padding */
+            border-left: 4px solid #0d6efd; /* Blue left border */
+            border-radius: 4px; /* Rounded corners */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); /* Subtle shadow */
+        }
+
+        .toc h4 {
+            margin: 0 0 5px 0; /* Remove default margin, add bottom margin */
+            color: #1f2937; /* Dark text color */
+        }
+
+        .toc a {
+            display: block; /* Make links block level */
+            color: #0d6efd; /* Blue text color */
+            text-decoration: none; /* No underline */
+            font-size: 14px; /* Font size */
+            margin: 4px 0; /* Vertical margin */
+        }
+
+        .toc a:hover {
+            text-decoration: underline; /* Underline on hover */
+        }
+        
+        /* New styling for the main content body within intro-content */
+        .content-body {
+            flex-grow: 1; /* Allows content to fill remaining space next to TOC */
+        }
+
+
+        /* Headings and paragraphs */
+        h2,
+        h3 {
+            color: #1f2937; /* Dark text color */
+            margin-top: 25px; /* Top margin */
+            margin-bottom: 15px; /* Bottom margin */
+            display: flex; /* Use flex for headings with toggle buttons/tabs */
+            align-items: center; /* Align items vertically */
+        }
+        /* Specific adjustment for Response heading */
+        h3.response-heading {
+            margin-bottom: 0; /* Adjust margin as tabs will sit below it */
+        }
+        p {
+            margin-bottom: 10px; /* Bottom margin for paragraphs */
+        }
+
+        /* Image styling */
+        img {
+            margin-top: 10px; /* Top margin */
+            max-width: 100%; /* Ensure image fits container */
+            height: auto; /* Maintain aspect ratio */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Subtle shadow */
+        }
+
+        .api-section-header {
+            margin-bottom: 20px; /* Bottom margin for API section headers */
+        }
+        .api-section-header h2 {
+            margin-bottom: 5px; /* Smaller bottom margin for H2 inside API section header */
+        }
+
+        /* Response Tabs */
+        .response-tabs {
+            display: flex;
+            margin-top: 10px; /* Margin above the tabs, below the heading */
+            margin-bottom: 10px;
+            overflow-x: auto; /* Allow horizontal scrolling if many tabs */
+            border-bottom: 1px solid #e0e0e0; /* Separator line below tabs */
+        }
+        .response-tab {
+            background-color: #374151; /* Dark grey tab background */
+            color: #d1d5db; /* Light grey text */
+            padding: 8px 15px;
+            border: 1px solid #4a5568; /* Slightly lighter border */
+            border-bottom: none; /* No bottom border */
+            cursor: pointer;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            margin-right: 2px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            white-space: nowrap; /* Prevent wrapping */
+        }
+        .response-tab:hover {
+            background-color: #4a5568; /* Darker hover */
+            color: white;
+        }
+        .response-tab.active {
+            background-color: #1e1e1e; /* Match code block background */
+            color: #98fabe; /* Greenish active color */
+            border-color: #1e1e1e;
+            border-bottom-color: #1e1e1e; /* Hide bottom border to merge with code block */
+        }
+
+        /* Parameter Table Styling */
+        .parameter-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 30px;
+            font-size: 15px;
+            background-color: #fcfcfc;
+            border-radius: 8px;
+            overflow: hidden; /* Ensures rounded corners on table */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .parameter-table th,
+        .parameter-table td {
+            border: 1px solid #e0e0e0;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .parameter-table th {
+            background-color: #f0f4f8; /* Light blue-grey for headers */
+            font-weight: bold;
+            color: #1f2937;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+
+        .parameter-table tr:nth-child(even) {
+            background-color: #f9f9f9; /* Zebra striping for rows */
+        }
+
+        .parameter-table tr:hover {
+            background-color: #eef2f6; /* Subtle hover effect */
+        }
+
+        .parameter-table .required {
+            color: #dc3545; /* Red for required field */
+            font-weight: bold;
+        }
+        .parameter-table .optional {
+            color: #28a745; /* Green for optional field */
+        }
+
+    </style>
+</head>
+
+<body>
+    <aside id="sidebar">
+        <button id="toggleSidebar">☰</button>
+        <h1>Payment Aggregator API Docs</h1>
+        <input type="text" id="searchInput" placeholder="Search APIs  🔍" />
+        
+        <!-- Payment Aggregator Section (New) -->
+        <div class="folder">
+            <div class="folder-title" onclick="toggleFolder(this)">1.0 Payment Aggregator <span class="icon">▼</span></div>
+            <ul>
+                <li onclick="showSection('api-login-doc', 'apiLogin')">📄 1.0.1 API Login</li>
+                <li onclick="showSection('submit-mis-doc', 'submitMisReport')">📄 1.0.2 Submit MIS Report</li>
+                <li onclick="showSection('get-mis-details-doc', 'getMisDetails')">📄 1.0.3 Get MIS Details</li>
+            </ul>
+        </div>
+
+        <!-- FAQs Section (New) -->
+        <div class="folder">
+            <div class="folder-title" onclick="toggleFolder(this)">2.0 FAQs <span class="icon">▼</span></div>
+            <ul>
+                <li onclick="showSection('faqs-doc', null)">📄 FAQs</li>
+            </ul>
+        </div>
+        
+        <!-- Placeholder for Wallet/EMI (Kept for template reference if needed later) -->
+        <div class="folder">
+            <div class="folder-title" onclick="toggleFolder(this)">3.0 Wallet (Placeholder) <span class="icon">▼</span></div>
+            <ul class="collapsed"> 
+                <li onclick="showSection('wallet-intro', null)">📄 Wallet Intro (Placeholder)</li>
+            </ul>
+        </div>
+        <div class="folder">
+            <div class="folder-title" onclick="toggleFolder(this)">4.0 EMI (Placeholder) <span class="icon">▼</span></div>
+            <ul class="collapsed"> 
+                <li onclick="showSection('emi-overview', null)">📄 EMI Overview (Placeholder)</li>
+            </ul>
+        </div>
+    </aside>
+    <main>
+        <header>
+            <div><strong>API Reference</strong></div>
+            <button class="toggleBtn" onclick="toggleRightPanel()">Toggle API Panel</button>
+        </header>
+        <div class="main-content">
+            <!-- Dynamic content area for documentation sections -->
+            
+            <!-- API Login Documentation -->
+            <div class="intro-content" id="api-login-doc" style="display:none;">
+                <div class="toc-container">
+                    <div class="toc">
+                        <h4>Quick Navigation</h4>
+                        <a href="#login-overview">Overview</a>
+                        <a href="#login-params">Parameters</a>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <div class="api-section-header">
+                        <h2 id="login-overview">1.0.1 API Login</h2>
+                        <p>This API endpoint is used to authenticate and obtain an access token required for subsequent API requests to the StAR MF system.</p>
+                        <p>A successful login provides an `access_token` that must be used in the `Authorization` header for all protected API calls.</p>
+                    </div>
+                    <h3 id="login-params">Request Parameters</h3>
+                    <div id="apiLogin-params"></div>
+                </div>
+            </div>
+
+            <!-- Submit MIS Report Documentation -->
+            <div class="intro-content" id="submit-mis-doc" style="display:none;">
+                <div class="toc-container">
+                    <div class="toc">
+                        <h4>Quick Navigation</h4>
+                        <a href="#submit-mis-overview">Overview</a>
+                        <a href="#submit-mis-params">Parameters</a>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <div class="api-section-header">
+                        <h2 id="submit-mis-overview">1.0.2 Submit Payment Aggregation (MIS) Report</h2>
+                        <p>This API is used to submit Payment Aggregation (MIS) reports. It accepts a list of objects, each representing a record for the MIS report.</p>
+                        <p><strong>Important:</strong> If the same request is submitted more than once for the same `payment_ref_id`, subsequent requests will be ignored. The maximum record level entry limit for API bulk upload is 10,000 records or a maximum file size of 10 MB.</p>
+                    </div>
+                    <h3 id="submit-mis-params">Request Parameters</h3>
+                    <div id="submitMisReport-params"></div>
+                </div>
+            </div>
+
+            <!-- Get MIS Details Documentation -->
+            <div class="intro-content" id="get-mis-details-doc" style="display:none;">
+                <div class="toc-container">
+                    <div class="toc">
+                        <h4>Quick Navigation</h4>
+                        <a href="#get-mis-overview">Overview</a>
+                        <a href="#get-mis-params">Parameters</a>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <div class="api-section-header">
+                        <h2 id="get-mis-overview">1.0.3 Payment Aggregator Get Details</h2>
+                        <p>This API allows you to retrieve details of a previously submitted Payment Aggregation (MIS) report based on a reference ID.</p>
+                        <p>Either `payment_ref_id` or `utrn_no` is mandatory for this API.</p>
+                    </div>
+                    <h3 id="get-mis-params">Request Parameters</h3>
+                    <div id="getMisDetails-params"></div>
+                </div>
+            </div>
+
+            <!-- FAQs Documentation -->
+            <div class="intro-content" id="faqs-doc" style="display:none;">
+                <div class="toc-container">
+                    <div class="toc">
+                        <h4>Quick Navigation</h4>
+                        <a href="#faqs-comm">Modes of Communication</a>
+                        <a href="#faqs-upload-limit">Upload Limits</a>
+                        <a href="#faqs-incorrect-records">Incorrect Records Handling</a>
+                        <a href="#faqs-naming">File Naming Convention</a>
+                        <a href="#faqs-sequential-naming">Sequential File Naming</a>
+                        <a href="#faqs-attributes">Attributes and Lengths</a>
+                        <a href="#faqs-multiple-requests">Multiple API Requests</a>
+                        <a href="#faqs-login-interval">Login Interval</a>
+                        <a href="#faqs-api-type">Type of API</a>
+                        <a href="#faqs-v1-v2-simultaneous">V1 and V2 Run Simultaneously</a>
+                        <a href="#faqs-bank-types">Bank Account Types</a>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <h2>Frequently Asked Questions</h2>
+                    <section id="faqs-comm">
+                        <h3>1. What modes of communication will be used for STAR MF Version 2.0?</h3>
+                        <p>The modes of communication for STAR MF Version 2.0 will be SFTP, UI, and API.</p>
+                    </section>
+                    <section id="faqs-comm">
+                        <h3>2. What modes of communication are currently being used for Version 1.0?</h3>
+                        <p>The current modes of communication for Version 1.0 are SFTP, UI and Email.</p>
+                    </section>
+                    <section id="faqs-next-steps">
+                        <h3>3. What are the next steps after the demo call?</h3>
+                        <ul>
+                            <li>Share the IP address.</li>
+                            <li>Post-whitelisting, validate and confirm connectivity.</li>
+                        </ul>
+                    </section>
+                     <section id="faqs-payment-modes">
+                        <h3>4. What are the preferred payment settlement modes for Version 2.0?</h3>
+                        <ul>
+                            <li>NEFT</li>
+                            <li>RTGS</li>
+                            <li>Cheque</li>
+                            <li>UPI</li>
+                            <li>IFT (Internal Fund Transfer)</li>
+                            <li>IMPS</li>
+                        </ul>
+                    </section>
+                    <section id="faqs-upload-options">
+                        <h3>5. What type of upload options are available in the API?</h3>
+                        <p>Both bulk upload and single upload options are available.</p>
+                    </section>
+                     <section id="faqs-mis-types">
+                        <h3>6. What are the MIS types for Version 2.0?</h3>
+                        <ul>
+                            <li>XSIP</li>
+                            <li>OTM</li>
+                            <li>DIRECT</li>
+                            <li>NODAL</li>
+                            <li>NEFT</li>
+                            <li>UPI</li>
+                            <li>UPIR</li>
+                            <li>NACH</li>
+                            <li>CHEQUE</li>
+                            <li>ENACH</li>
+                            <li>DIRECT DEBIT</li>
+                        </ul>
+                    </section>
+                    <section id="faqs-upload-limit">
+                        <h3>7. Is there a limit on the upload size?</h3>
+                        <ul>
+                            <li>Upload limit via API: 10,000 records in one go.</li>
+                            <li>For CSV files: Up to 10 MB of data can be uploaded through the STAR MF Version 2.0 interface.</li>
+                        </ul>
+                    </section>
+                    <section id="faqs-user-defined-fields">
+                        <h3>8. What needs to be mentioned in the documentation regarding user-defined fields?</h3>
+                        <p>Refer to the mode-wise expected documentation and complete the fields accordingly.</p>
+                    </section>
+                    <section id="faqs-exchorder-num">
+                        <h3>9. What should be passed for the exchange order number (exchorder_num) in MIS transactions?</h3>
+                        <ul>
+                            <li>For OTM transactions, the exchange order number must be passed.</li>
+                            <li>In XSIP transactions, the SIP registration number should be used.</li>
+                            <li>For other modes, this field will remain blank.</li>
+                        </ul>
+                    </section>
+                    <section id="faqs-encryption">
+                        <h3>10. What encryption level is required for JSON/file or data?</h3>
+                        <p>No encryption is required unless specified separately.</p>
+                    </section>
+                    <section id="faqs-login-interval">
+                        <h3>11. What is the login time interval and frequency?</h3>
+                        <ul>
+                            <li>UAT Environment: 30 seconds interval</li>
+                            <li>Production Environment: 25 seconds interval</li>
+                        </ul>
+                    </section>
+                    <section id="faqs-api-type">
+                        <h3>12. What type of API is used in StAR MF Version 2.0?</h3>
+                        <p>An asynchronous API is utilized.</p>
+                    </section>
+                    <section id="faqs-v1-v2-simultaneous">
+                        <h3>13. Will STAR MF Version 1.0 and 2.0 run simultaneously?</h3>
+                        <p>Yes, PAs, Banks, and Agencies are hereby advised that, effective immediately, a new Credit MIS file format shall be applicable for reporting under the StAR MF 2.0 platform. Both the existing MIS format for Version 1 and the new Credit MIS format for Version 2 will operate concurrently. It is the responsibility of all reporting entities to ensure accurate and timely submission of transaction data in the respective formats applicable to each version.</p>
+                    </section>
+                    <section id="faqs-bank-types">
+                        <h3>14. What are the bank account types available?</h3>
+                        <ul>
+                            <li>SB - Saving Account</li>
+                            <li>CB - Current Account</li>
+                            <li>NR - NRE Account</li>
+                            <li>NO - NRO Account</li>
+                            <li>OT - Other (Other refers to any account which is not mentioned above)</li>
+                        </ul>
+                    </section>
+                    <section id="faqs-char-length-bank">
+                        <h3>15. What is the character length for the bank name and account type?</h3>
+                        <p>Please refer to the MIS API documentation for details (referencing parameter tables in other sections).</p>
+                    </section>
+                    <section id="faqs-multiple-requests">
+                        <h3>16. Can multiple API requests be sent at once?</h3>
+                        <p>Only one API request can be sent at a time.</p>
+                    </section>
+                    <section id="faqs-attributes">
+                        <h3>17. What attributes and character lengths are required for development?</h3>
+                        <p>Refer to the MIS API documentation for specific attributes, length, and format requirements (referencing parameter tables in other sections).</p>
+                    </section>
+                    <section id="faqs-bulk-upload-limit">
+                        <h3>18. What is the maximum record level entry limit for API bulk upload?</h3>
+                        <p>The limit is 10,000 records in one batch or a maximum file size of 10 MB.</p>
+                    </section>
+                    <section id="faqs-incorrect-records">
+                        <h3>19. What happens if some records are incorrect during an upload?</h3>
+                        <ul>
+                            <li>Valid records will be successfully processed.</li>
+                            <li>Incorrect records will be rejected.</li>
+                            <li>Only the incorrect records need to be corrected and re-uploaded.</li>
+                        </ul>
+                    </section>
+                     <section id="faqs-file-naming">
+                        <h3>20. File name convention for upload and collection file?</h3>
+                        <ul>
+                            <li>For Upload: `Agencycode_DDMMMYYYY_0001`</li>
+                            <li>For Collection: `C_Agencycode_DDMMMYYYY_0001`</li>
+                        </ul>
+                    </section>
+                    <section id="faqs-sequential-naming">
+                        <h3>21. How File Upload Handling and Sequential File Naming be in StAR MF Version 2.0?</h3>
+                        <p>Consider the below example:</p>
+                        <p><strong>Condition:</strong> If a file with sequence number 0001 has already been uploaded or marked as rejected, and the system enforces sequential file numbering.</p>
+                        <p><strong>Expected System Behavior:</strong></p>
+                        <ul>
+                            <li>The system must identify the next available sequence number in the series.</li>
+                            <li>It should automatically assign this sequence number when attempting to re-upload the contents of the rejected file.</li>
+                            <li>If the same sequence number is reused without proper handling, the system must raise a `Duplicate File Upload` error during the validation stage.</li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+
+
+            <!-- Placeholder sections that are not used in the PDF but kept for template -->
+            <div class="intro-content" id="wallet-intro" style="display:none;">
+                <div class="toc-container">
+                    <div class="toc">
+                        <h4>Quick Navigation</h4>
+                        <a href="#wallet-about-ph">About Wallet (Placeholder)</a>
+                        <a href="#wallet-flow-ph">Wallet Flow Diagram (Placeholder)</a>
+                        <a href="#wallet-benefits-ph">Benefits (Placeholder)</a>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <section id="wallet-about-ph">
+                        <h2>About Wallet (Placeholder)</h2>
+                        <p>This section is a placeholder for Wallet API introduction.</p>
+                    </section>
+                    <section id="wallet-flow-ph">
+                        <h2>Wallet Flow Diagram (Placeholder)</h2>
+                        <img src="https://placehold.co/700x350/ccc/000?text=Wallet+Flow+Diagram+Placeholder" alt="Wallet Flow Diagram Placeholder" />
+                    </section>
+                    <section id="wallet-benefits-ph">
+                        <h2>Benefits of Wallet (Placeholder)</h2>
+                        <ul>
+                            <li>Placeholder benefit 1</li>
+                            <li>Placeholder benefit 2</li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+
+            <div class="intro-content" id="emi-overview" style="display:none;">
+                <div class="toc-container">
+                    <div class="toc">
+                        <h4>Quick Navigation</h4>
+                        <a href="#emi-intro-ph">Introduction to EMI (Placeholder)</a>
+                        <a href="#emi-types-ph">Supported EMI Types (Placeholder)</a>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <section id="emi-intro-ph">
+                        <h2>EMI Overview (Placeholder)</h2>
+                        <p>This section is a placeholder for EMI API introduction.</p>
+                    </section>
+                    <section id="emi-types-ph">
+                        <h3>Supported EMI Types (Placeholder):</h3>
+                        <ul>
+                            <li>Placeholder EMI Type 1</li>
+                            <li>Placeholder EMI Type 2</li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+            <!-- End Placeholder sections -->
+
+            <!-- Right side panel for API details -->
+            <div class="right-toggle-panel" id="rightPanel">
+                <!-- API header, CURL, Request, Response will be dynamically loaded here based on sidebar selection -->
+                <div id="api-header-right-panel" class="api-header" style="display:none;">
+                    <div class="request-type"></div>
+                    <div class="url-container">
+                        <div class="url"></div>
+                        <button class="copy-btn" onclick="copyURL()">📋</button>
+                    </div>
+                </div>
+
+                <h3>🧾 CURL</h3>
+                <div id="curlBlock" class="code-block">
+                    <pre>// Select an API endpoint from the sidebar to see CURL examples.</pre>
+                    <button class="read-more-btn" onclick="toggleReadMore('curlBlock')">Read More</button>
+                </div>
+
+                <h3>📤 Request <button class="toggleBtn" onclick="toggleBlock('requestBlock')">Toggle Request</button></h3>
+                <div id="requestBlock" class="code-block">
+                    <pre>// Request payload will appear here.</pre>
+                    <button class="read-more-btn" onclick="toggleReadMore('requestBlock')">Read More</button>
+                </div>
+
+                <!-- Response heading and toggle button -->
+                <h3 class="response-heading">📥 Response <button class="toggleBtn" onclick="toggleBlock('responseContainer')">Toggle Response</button></h3>
+                <!-- Container for response tabs and response block, to be toggled together -->
+                <div id="responseContainer" style="display:block;"> 
+                    <div class="response-tabs" id="responseTabs">
+                        <!-- Response tabs will be dynamically inserted here -->
+                    </div>
+                    <div id="responseBlock" class="code-block">
+                        <pre>// Response body will appear here.</pre>
+                        <button class="read-more-btn" onclick="toggleReadMore('responseBlock')">Read More</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Data structure holding API details for dynamic loading
+        const apiData = {
+            apiLogin: {
+                method: "POST",
+                url: "POST /api/login",
+                curl: `curl -X POST /api/login \\
+-H "Content-Type: application/json" \\
+-d '{
+  "data": {
+    "username": "pa/tcp/tcp.makerone",
+    "password": "Pa@admin123"
+  }
+}'`,
+                request: `{
+  "data": {
+    "username": "pa/tcp/tcp.makerone",
+    "password": "Pa@admin123"
+  }
+}`,
+                responses: {
+                    "200 Success": `{
+  "status": "success",
+  "data": {
+    "access_token": "eyJhbGciOiJSUzI1NilsInR5cClgOiAiSldUliwia2lkliA6ICI4LVISV0tQaVV4ejhlN0drbzhzWVJ1aGdtM29OU3ozWXVMV2ozMTh.....JeFFRIn0"
+  },
+  "messages": []
+}`,
+                    "401 Error": `{
+  "status": "error",
+  "data": null,
+  "messages": [
+    {
+      "msgid": 672,
+      "errcode": "login_failed"
+    }
+  ]
+}`
+                },
+                parameters: [
+                    { name: "username", description: "Username provided by StAR MF system.", type: "string", required: true },
+                    { name: "password", description: "Password provided by StAR MF system.", type: "string", required: true }
+                ]
+            },
+            submitMisReport: {
+                method: "POST",
+                url: "POST /v2/upload_mis",
+                curl: `curl -X POST /v2/upload_mis \\
+-H "Content-Type: application/json" \\
+-d '{
+  "data": [
+    {
+      "payment_ref_id": "AAAajeet001",
+      "agency_code": "HDF",
+      "mis_type": "NACH",
+      "member": "0179",
+      "investor": {
+        "ucc": "T01D1HON",
+        "panholders": "",
+        "holding_nature": ""
+      },
+      "parent_client_code": "DADASD",
+      "amount": 10000,
+      "credit_dt": "27-FEB-2025",
+      "credit_at": "15:30:34",
+      "bank_txn_ref": "AAAAJEET001",
+      "umrn_ref": "cvs222v",
+      "src_bank_acc": {
+        "ifsc": "ABHY0065002",
+        "no": "980000000000",
+        "type": "SB",
+        "name": "ABHYUDAYA BANK"
+      },
+      "dest_bank_acc": {
+        "ifsc": "HDFC0000060",
+        "no": "57500001579280",
+        "type": "CB",
+        "name": "HDFC BANK"
+      },
+      "exchorder_num": "12312312312",
+      "paymt_mode": "NEFT",
+      "custom_ref_num": "22331231123",
+      "info": {
+        "investor_name": ""
+      },
+      "remark": "Some Remarknothing",
+      "status": "someStautsu11"
+    }
+  ]
+}'`,
+                request: `{
+  "data": [
+    {
+      "payment_ref_id": "AAAajeet001",
+      "agency_code": "HDF",
+      "mis_type": "NACH",
+      "member": "0179",
+      "investor": {
+        "ucc": "T01D1HON",
+        "panholders": "",
+        "holding_nature": ""
+      },
+      "parent_client_code": "DADASD",
+      "amount": 10000,
+      "credit_dt": "27-FEB-2025",
+      "credit_at": "15:30:34",
+      "bank_txn_ref": "AAAAJEET001",
+      "umrn_ref": "cvs222v",
+      "src_bank_acc": {
+        "ifsc": "ABHY0065002",
+        "no": "980000000000",
+        "type": "SB",
+        "name": "ABHYUDAYA BANK"
+      },
+      "dest_bank_acc": {
+        "ifsc": "HDFC0000060",
+        "no": "57500001579280",
+        "type": "CB",
+        "name": "HDFC BANK"
+      },
+      "exchorder_num": "12312312312",
+      "paymt_mode": "NEFT",
+      "custom_ref_num": "22331231123",
+      "info": {
+        "investor_name": ""
+      },
+      "remark": "Some Remarknothing",
+      "status": "someStautsu11"
+    }
+  ]
+}`,
+                responses: {
+                    "200 Success": `{
+  "status": "success",
+  "data": "Accepted",
+  "messages": null
+}`,
+                    "400 Bad Request (Detail Mismatch)": `{
+  "status": "error",
+  "data": null,
+  "messages": [
+    {
+      "msgid": 1596,
+      "errcode": "detail_mismatch",
+      "field": "ajeet001.AgencyCode/MisType/DestBankAcc"
+    }
+  ]
+}`,
+                    "400 Bad Request (Required Field)": `{
+  "status": "error",
+  "data": null,
+  "messages": [
+    {
+      "msgid": 522,
+      "errcode": "required",
+      "field": "agency_code"
+    }
+  ]
+}`
+                },
+                parameters: [
+                    { name: "payment_ref_id", description: "PG Reference no/ Mandate ID/Transaction ref ID. Blank only in case of NEFT mis_type. MandateID in case of XSIP and OTM mis_type. Deposit Challan No in case of CHEQUE mis_type.", type: "string", required: false, condition: "Conditional (C)" },
+                    { name: "agency_code", description: "Agency Code for instance RZP/ICI/RCB/TCP (3 characters).", type: "string", required: true },
+                    { name: "mis_type", description: "Type of MIS being uploaded. Refer to <code>mis_type</code> enum for values.", type: "enum", required: true },
+                    { name: "member", description: "Member code (Min 3 and Max 5 character).", type: "string", required: true },
+                    { name: "investor", description: "Investor (UCC/pan holder details). Object containing: <code>ucc</code>, <code>panholders</code>, <code>holding_nature</code>.", type: "object", required: true },
+                    { name: "parent_client_code", description: "Parent Client Code.", type: "string", required: false, condition: "Conditional (C)" },
+                    { name: "amount", description: "Amount received from client as reported by bank. (11 digit and up to 2 decimal total 13 digit max).", type: "float", required: true },
+                    { name: "credit_dt", description: "Date on which amount credited - DD-MMM-YYYY.", type: "Date", required: true },
+                    { name: "credit_at", description: "Time at which amount credited HH:MI:SS (PA can put exact time, or 00:00:00 if time is not tracked by PA).", type: "Time", required: false },
+                    { name: "bank_txn_ref", description: "Bank UTR no Max 22 / Cheque no (6 digit). Also supports Cheque: char(6).", type: "string", required: false, condition: "Conditional (C)" },
+                    { name: "umrn_ref", description: "UMRN.", type: "string", required: false, condition: "Conditional (C)" },
+                    { name: "src_bank_acc", description: "Investor's bank account details from which fund received. Object containing: <code>ifsc</code>, <code>no</code>, <code>type</code>, <code>name</code>.", type: "object", required: true },
+                    { name: "dest_bank_acc", description: "Clearing Corp's bank account details to which fund was transferred. Object containing: <code>ifsc</code>, <code>no</code>, <code>type</code>, <code>name</code>.", type: "object", required: true },
+                    { name: "exchorder_num", description: "Order number issued by StAR MF platform (In case of Lumpsum Txn).", type: "string", required: false, condition: "Conditional (C)" },
+                    { name: "paymt_mode", description: "Payment Receipt Mode. Refer to <code>paymt_mode</code> enum for values.", type: "enum", required: true },
+                    { name: "custom_ref_num", description: "Additional reference number provided by investor's bank, else empty.", type: "string", required: false, condition: "Conditional (C)" },
+                    { name: "info", description: "{ 'investor_name': '...' } (this object is only for informational purpose, and will not be interpreted for order processing).", type: "object", required: false },
+                    { name: "remark", description: "Remarks (only printable characters allowed, it has no significance on business logic).", type: "string", required: false, condition: "Conditional (C)" },
+                    { name: "status", description: "MIS status. In case of UTR availability 'A- Accepted'. Refer to <code>mis_status</code> enum for values.", type: "enum", required: false, condition: "Conditional (C)" }
+                ]
+            },
+            getMisDetails: {
+                method: "POST",
+                url: "POST /v2/get_mis_detail",
+                curl: `curl -X POST /v2/get_mis_detail \\
+-H "Content-Type: application/json" \\
+-d '{
+  "data": {
+    "payment_ref_id": "ATM01D1HON01312101",
+    "utrn_no": "AAAAJEET001"
+  }
+}'`,
+                request: `{
+  "data": {
+    "payment_ref_id": "ATM01D1HON01312101",
+    "utrn_no": "AAAAJEET001"
+  }
+}`,
+                responses: {
+                    "200 Success": `{
+  "status": "success",
+  "data": {
+    "payment_ref_id": "AAAajeet001",
+    "agency_code": "HDF",
+    "mis_type": "NACH",
+    "member": "0179",
+    "investor": {
+      "ucc": "T01D1HON",
+      "panholders": "",
+      "holding_nature": ""
+    },
+    "parent_client_code": "DADASD",
+    "amount": 10000,
+    "credit_dt": "27-FEB-2025",
+    "credit_at": "15:30:00",
+    "bank_txn_ref": "AAAAJEET001",
+    "umrn_ref": "",
+    "src_bank_acc": {
+      "no": "980000000000",
+      "ifsc": "ABHY0065002",
+      "name": "ABHYUDAYA CCCCCCC COOPERATIVE BBBBBANK LIMITED"
+    },
+    "dest_bank_acc": {
+      "no": "57500001579280",
+      "ifsc": "HDFC0000060",
+      "name": "HDFC BANK"
+    },
+    "exchorder_num": "12312312312",
+    "paymt_mode": "NEFT",
+    "custom_ref_num": "22331231123",
+    "info": {
+      "investor_name": "",
+      "mem_details": {}
+    },
+    "remark": "Some Remarknothing",
+    "status": "someStautsu11"
+  },
+  "messages": null
+}`,
+                    "400 Bad Request (Record Not Found)": `{
+  "status": "error",
+  "data": null,
+  "messages": [
+    {
+      "msgid": 1507,
+      "errcode": "record_not_found",
+      "field": "bank_txn_ref",
+      "vals": [
+        "AQQQAAJEET001"
+      ]
+    }
+  ]
+}`
+                },
+                parameters: [
+                    { name: "payment_ref_id", description: "Payment reference number.", type: "string", required: false, condition: "Conditional (C)" },
+                    { name: "utrn_no", description: "UTR Number.", type: "string", required: false, condition: "Conditional (C)" },
+                    { name: "Note", description: "Any one of the above two parameters (payment_ref_id or utrn_no) is mandatory.", type: "string", required: true, condition: "Note" }
+                ]
+            },
+            // Placeholder for original wallet APIs (wallet-create, wallet-upi, wallet-net) can be found in a comment below if you wish to re-add them.
+            // walletUpi and walletNet from previous version are removed as this document focuses on Payment Aggregator.
+        };
+
+        /**
+         * Toggles the display of a code block (request/response).
+         * @param {string} id The ID of the HTML element to toggle.
+         */
+        function toggleBlock(id) {
+            const block = document.getElementById(id);
+            if (block) {
+                block.style.display = block.style.display === "none" || block.style.display === "" ? "block" : "none";
+            }
+        }
+
+        /**
+         * Toggles the visibility of the right API panel.
+         */
+        function toggleRightPanel() {
+            const panel = document.getElementById('rightPanel');
+            if (panel) {
+                panel.classList.toggle('minimized');
+            }
+        }
+
+        /**
+         * Applies syntax highlighting to JSON string.
+         * @param {string|object} json The JSON string or object to highlight.
+         * @returns {string} HTML string with syntax highlighting spans.
+         */
+        function syntaxHighlight(json) {
+            if (typeof json !== 'string') {
+                json = JSON.stringify(json, undefined, 2);
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            // Regex to highlight keys, strings, numbers, booleans, null
+            return json.replace(/("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+\.?\d*)/g, function (match) {
+                let cls = 'number'; // Default class for numbers
+                if (/^"/.test(match)) {
+                    cls = /:$/.test(match) ? 'key' : 'string'; // Determine if it's a key or a string value
+                } else if (/true|false/.test(match)) {
+                    cls = 'boolean'; // Class for boolean values
+                } else if (/null/.test(match)) {
+                    cls = 'null'; // Class for null values
+                }
+                return `<span class="${cls}">${match}</span>`;
+            });
+        }
+
+        /**
+         * Formats and displays a JSON string in a code block with syntax highlighting.
+         * @param {string} id The ID of the code block element.
+         * @param {string} rawJson The raw JSON string.
+         */
+        function formatJsonBlock(id, rawJson) {
+            const block = document.getElementById(id);
+            if (block && block.querySelector('pre')) {
+                const preElement = block.querySelector('pre');
+                preElement.classList.remove('expanded'); // Reset expanded state
+                try {
+                    if (rawJson.trim() === '' || rawJson.trim() === '{}') {
+                        preElement.textContent = rawJson.trim() === '' ? '// No Request Body' : '{}';
+                    } else {
+                        const obj = JSON.parse(rawJson);
+                        preElement.innerHTML = syntaxHighlight(obj);
+                    }
+                } catch (e) {
+                    preElement.textContent = "Invalid JSON: " + e.message;
+                    console.error("Error parsing JSON for " + id + ":", e);
+                }
+                checkAndAddReadMore(id); // Check and add read more button after content is set
+            }
+        }
+
+        /**
+         * Formats and displays a CURL command string in a code block with syntax highlighting.
+         * @param {string} id The ID of the code block element.
+         * @param {string} curlString The raw CURL command string.
+         */
+        function formatCurlBlock(id, curlString) {
+            const block = document.getElementById(id);
+            if (block && block.querySelector('pre')) {
+                const preElement = block.querySelector('pre');
+                preElement.classList.remove('expanded'); // Reset expanded state
+                // Basic curl highlighting with custom classes for styling
+                const highlightedCurl = curlString
+                    .replace(/curl/, '<span class="curl-param">curl</span>')
+                    .replace(/-X (POST|GET|PUT|DELETE)/g, `-X <span class="curl-verb">$1</span>`)
+                    // Regex for URLs, ensuring it handles backslashes for line breaks
+                    .replace(/(https?:\/\/[^\s\\]+)/g, '<span class="curl-url">$1</span>') 
+                    .replace(/-H "([^"]+)"/g, `-H "<span class="string">$1</span>"`)
+                    .replace(/-d '([^']+)'/g, `-d '<span class="string curl-data">$1</span>'`);
+                preElement.innerHTML = highlightedCurl;
+                checkAndAddReadMore(id); // Check and add read more button after content is set
+            }
+        }
+
+        /**
+         * Checks if content is too long and adds/removes "Read More" button.
+         * @param {string} blockId The ID of the code block element.
+         */
+        function checkAndAddReadMore(blockId) {
+            const block = document.getElementById(blockId);
+            const preElement = block ? block.querySelector('pre') : null;
+            const readMoreBtn = block ? block.querySelector('.read-more-btn') : null;
+
+            if (preElement && readMoreBtn) {
+                // Temporarily remove max-height to get full scrollHeight
+                const originalMaxHeight = preElement.style.maxHeight;
+                preElement.style.maxHeight = 'none';
+                const isOverflowing = preElement.scrollHeight > 150; // 150px is default max-height
+                preElement.style.maxHeight = originalMaxHeight; // Restore max-height
+
+                if (isOverflowing) {
+                    readMoreBtn.style.display = 'block';
+                    readMoreBtn.textContent = 'Read More';
+                    preElement.classList.remove('expanded');
+                } else {
+                    readMoreBtn.style.display = 'none';
+                    preElement.classList.add('expanded'); // Ensure no fade if not overflowing
+                }
+            }
+        }
+
+        /**
+         * Toggles the expanded state of a code block and updates the "Read More" button.
+         * @param {string} blockId The ID of the code block element.
+         */
+        function toggleReadMore(blockId) {
+            const block = document.getElementById(blockId);
+            const preElement = block ? block.querySelector('pre') : null;
+            const readMoreBtn = block ? block.querySelector('.read-more-btn') : null;
+
+            if (preElement && readMoreBtn) {
+                preElement.classList.toggle('expanded');
+                if (preElement.classList.contains('expanded')) {
+                    readMoreBtn.textContent = 'Show Less';
+                } else {
+                    readMoreBtn.textContent = 'Read More';
+                }
+            }
+        }
+
+
+        /**
+         * Displays the selected response (e.g., 200, 400) in the response block.
+         * @param {string} apiId The ID of the current API.
+         * @param {string} statusCode The status code of the response to display.
+         */
+        function displayResponse(apiId, statusCode) {
+            const responseTabs = document.getElementById('responseTabs');
+            if (responseTabs) {
+                responseTabs.querySelectorAll('.response-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+
+                const selectedTab = document.querySelector(`.response-tab[data-status="${statusCode}"]`);
+                if (selectedTab) {
+                    selectedTab.classList.add('active');
+                }
+            }
+
+            const responseText = apiData[apiId].responses[statusCode] || `{ "error": "No response example for ${statusCode}" }`;
+            formatJsonBlock('responseBlock', responseText);
+        }
+
+        /**
+         * Dynamically creates and displays a parameter table for a given API.
+         * @param {string} apiId The ID of the current API.
+         */
+        function displayParametersTable(apiId) {
+            const paramsContainer = document.getElementById(`${apiId}-params`);
+            if (!paramsContainer) return;
+
+            const parameters = apiData[apiId].parameters;
+            if (!parameters || parameters.length === 0) {
+                paramsContainer.innerHTML = '<p>No parameters defined for this API.</p>';
+                return;
+            }
+
+            let tableHtml = `<table class="parameter-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter Name</th>
+                                        <th>Description</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+
+            parameters.forEach(param => {
+                // Handle the special "Note" case for parameters
+                if (param.condition === "Note") {
+                    tableHtml += `<tr><td colspan="4" style="font-style: italic; color: #555; background-color: #f0f4f8;">${param.name}: ${param.description}</td></tr>`;
+                } else {
+                    const requiredClass = param.required ? 'required' : 'optional';
+                    const requiredText = param.required ? 'Mandatory (M) ' : (param.condition || 'Not Mandatory (N)'); // Use condition if provided, else 'No'
+                    tableHtml += `<tr>
+                                    <td><code>${param.name}</code></td>
+                                    <td>${param.description}</td>
+                                    <td>${param.type}</td>
+                                    <td class="${requiredClass}">${requiredText}</td>
+                                  </tr>`;
+                }
+            });
+
+            tableHtml += `</tbody></table>`;
+            paramsContainer.innerHTML = tableHtml;
+        }
+
+
+        /**
+         * Shows the selected main content section and loads API details if an API is selected.
+         * @param {string} sectionId The ID of the intro-content section to display.
+         * @param {string|null} apiId The ID of the API data to load into the right panel, or null for general sections.
+         */
+        function showSection(sectionId, apiId) {
+            // Hide all intro-content sections and their parameter tables
+            document.querySelectorAll(".intro-content").forEach(div => {
+                div.style.display = "none";
+                // Clear any existing parameter tables
+                const paramDiv = div.querySelector('[id$="-params"]');
+                if (paramDiv) paramDiv.innerHTML = '';
+            });
+
+            // Show the selected section
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.style.display = "flex"; /* Use flex for TOC alongside content */
+                const tocContainer = targetSection.querySelector('.toc-container');
+                // Show TOC only for intro/overview sections (apiId is null)
+                if (tocContainer) {
+                    tocContainer.style.display = (apiId === null) ? 'block' : 'none'; 
+                }
+            }
+
+            // Update active link in sidebar
+            document.querySelectorAll(".folder ul li").forEach(li => li.classList.remove("active-link"));
+            const currentLi = document.querySelector(`[onclick*="showSection('${sectionId}'"]`);
+            if (currentLi) {
+                currentLi.classList.add("active-link");
+            }
+            
+            // Handle right panel visibility and content based on apiId
+            const rightPanel = document.getElementById('rightPanel');
+            const apiHeaderRightPanel = document.getElementById('api-header-right-panel');
+            const curlBlockPre = document.getElementById('curlBlock').querySelector('pre');
+            const requestBlockPre = document.getElementById('requestBlock').querySelector('pre');
+            const responseBlockPre = document.getElementById('responseBlock').querySelector('pre');
+            const responseTabsContainer = document.getElementById('responseTabs');
+            const responseContainer = document.getElementById('responseContainer');
+
+
+            if (apiId && apiData[apiId]) {
+                const data = apiData[apiId];
+                apiHeaderRightPanel.style.display = 'flex'; // Show API header
+
+                apiHeaderRightPanel.querySelector('.request-type').textContent = data.method;
+                apiHeaderRightPanel.querySelector('.url').textContent = data.url;
+
+                formatCurlBlock('curlBlock', data.curl);
+                formatJsonBlock('requestBlock', data.request);
+                
+                // Clear and create response tabs
+                responseTabsContainer.innerHTML = '';
+                const statusCodes = Object.keys(data.responses);
+                statusCodes.forEach(statusCode => {
+                    const tab = document.createElement('div');
+                    tab.classList.add('response-tab');
+                    tab.textContent = statusCode;
+                    tab.setAttribute('data-status', statusCode);
+                    tab.onclick = () => displayResponse(apiId, statusCode);
+                    responseTabsContainer.appendChild(tab);
+                });
+
+                // Display the first response by default
+                if (statusCodes.length > 0) {
+                    displayResponse(apiId, statusCodes[0]);
+                } else {
+                    formatJsonBlock('responseBlock', '{ "message": "No response examples." }');
+                }
+                responseContainer.style.display = 'block'; // Ensure response container is visible
+                displayParametersTable(apiId); // Display parameter table for the selected API
+                rightPanel.style.display = 'block'; // Ensure panel is visible when API details are shown
+            } else {
+                // If it's an intro/overview section, clear and hide API specific details
+                apiHeaderRightPanel.style.display = 'none';
+                curlBlockPre.textContent = '// Select an API endpoint from the sidebar to see code examples.';
+                requestBlockPre.textContent = '// Request payload will appear here.';
+                responseBlockPre.textContent = '// Response body will appear here.';
+                responseTabsContainer.innerHTML = ''; // Clear response tabs
+                responseContainer.style.display = 'none'; // Hide response container
+                // No parameter table for non-API sections, already cleared above.
+            }
+        }
+
+        /**
+         * Copies the API URL from the right panel to the clipboard.
+         */
+        function copyURL() {
+            const urlElement = document.getElementById('api-header-right-panel').querySelector('.url');
+            if (urlElement) {
+                const urlText = urlElement.textContent;
+                // Use document.execCommand('copy') for better compatibility in iframes
+                const textArea = document.createElement("textarea");
+                textArea.value = urlText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    // In a real app, use a custom message box instead of alert
+                    console.log('URL copied to clipboard!'); 
+                } catch (err) {
+                    console.error('Failed to copy URL: ', err);
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        /**
+         * Toggles the collapse state of a sidebar folder.
+         * @param {HTMLElement} folderTitleElement The clicked folder title element.
+         */
+        function toggleFolder(folderTitleElement) {
+            const ul = folderTitleElement.nextElementSibling;
+            if (ul && ul.tagName === 'UL') {
+                ul.classList.toggle('collapsed');
+                folderTitleElement.classList.toggle('collapsed');
+            }
+        }
+
+        // Event listener for sidebar toggle button
+        document.getElementById("toggleSidebar").addEventListener("click", () => {
+            document.getElementById("sidebar").classList.toggle("minimized");
+        });
+
+        // Initialize on page load
+        window.addEventListener("DOMContentLoaded", () => {
+            // Show the initial "API Login" section by default
+            showSection('api-login-doc', 'apiLogin'); 
+            
+            // Apply initial collapse state to folders marked with 'collapsed' class
+            document.querySelectorAll('.folder ul.collapsed').forEach(ul => {
+                ul.previousElementSibling.classList.add('collapsed'); // Add collapsed class to title
+            });
+
+            // Ensure initial JSON blocks are formatted and "Read More" is checked
+            formatJsonBlock('requestBlock', '{}'); // Placeholder
+            formatJsonBlock('responseBlock', '{}'); // Placeholder
+            formatCurlBlock('curlBlock', '// Select an API endpoint from the sidebar to see code examples.'); // Placeholder
+        });
+    </script>
+</body>
+
+</html>
